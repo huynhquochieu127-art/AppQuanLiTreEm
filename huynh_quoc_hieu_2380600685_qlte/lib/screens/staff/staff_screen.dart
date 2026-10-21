@@ -55,7 +55,7 @@ class _StaffScreenState extends State<StaffScreen> {
   void _showKetNoiThietBiDialog() {
     final maPairController = TextEditingController();
     final dsChuaKetNoi = _danhSachThietBi
-        .where((b) => !ApiService.daKetNoiGiaoVien(b))
+        .where((b) => !ApiService.daKetNoiGiaoVien(b, gvUsername: _gvUsername))
         .toList();
 
     showDialog(
@@ -132,11 +132,13 @@ class _StaffScreenState extends State<StaffScreen> {
                       final String tenMay = be['tenThietBi'] ?? 'Điện thoại';
                       final String maPair = be['maKetNoi'] ?? 'PAIR';
                       final String tenPh = be['tenPhuHuynh'] ?? 'Phụ huynh';
+                      final bool daKetNoiGvKhac = ApiService.daKetNoiGiaoVien(be);
+                      final String gvKhacText = daKetNoiGvKhac ? ' (Đang GV: ${ApiService.layTenGiaoVienKetNoi(be)})' : '';
                       return ActionChip(
                         avatar: Icon(Icons.add_link_rounded, size: 15, color: Colors.teal.shade700),
                         backgroundColor: Colors.teal.shade50,
                         label: Text(
-                          '$tenBe ($tenMay • $maPair) - PH: $tenPh',
+                          '$tenBe ($tenMay • $maPair)$gvKhacText - PH: $tenPh',
                           style: TextStyle(fontSize: 11.5, color: Colors.teal.shade900, fontWeight: FontWeight.w600),
                         ),
                         onPressed: () {
@@ -465,9 +467,11 @@ class _StaffScreenState extends State<StaffScreen> {
     // Nếu là Admin: Hiển thị toàn bộ máy trên hệ thống
     final List<dynamic> baseList = widget.isAdmin
         ? _danhSachThietBi
-        : _danhSachThietBi.where((b) => ApiService.daKetNoiGiaoVien(b)).toList();
+        : _danhSachThietBi.where((b) => ApiService.daKetNoiGiaoVien(b, gvUsername: _gvUsername)).toList();
 
-    final int soMayChoKetNoi = _danhSachThietBi.where((b) => !ApiService.daKetNoiGiaoVien(b)).length;
+    final int soMayChoKetNoi = widget.isAdmin
+        ? _danhSachThietBi.where((b) => !ApiService.daKetNoiGiaoVien(b)).length
+        : _danhSachThietBi.where((b) => !ApiService.daKetNoiGiaoVien(b, gvUsername: _gvUsername)).length;
 
     final tongSo = baseList.length;
     final dangKhoaCount = baseList.where((b) => b['dangKhoa'] == true).length;
@@ -698,7 +702,9 @@ class _StaffScreenState extends State<StaffScreen> {
                       final dangKhoa = be['dangKhoa'] == true;
                       final phuHuynh = be['tenPhuHuynh'] ?? 'Chưa liên kết';
                       final maKetNoi = be['maKetNoi'] ?? 'PAIR';
-                      final daKetNoiGv = ApiService.daKetNoiGiaoVien(be);
+                      final daKetNoiGv = widget.isAdmin
+                          ? ApiService.daKetNoiGiaoVien(be)
+                          : ApiService.daKetNoiGiaoVien(be, gvUsername: _gvUsername);
                       final tenGvKetNoi = ApiService.layTenGiaoVienKetNoi(be);
 
                       return Container(

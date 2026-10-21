@@ -391,30 +391,45 @@ class ApiService {
 
   // ==================== 5. LIÊN KẾT GIÁO VIÊN <-> THIẾT BỊ BÉ QUA MÃ PAIR ====================
 
-  // Kiểm tra thiết bị bé đã kết nối với Giáo viên chưa
+  // Kiểm tra thiết bị bé đã kết nối với Giáo viên chưa (Hỗ trợ nhiều Giáo viên cùng kết nối 1 máy)
   static bool daKetNoiGiaoVien(Map<String, dynamic> be, {String? gvUsername}) {
     final raw = (be['hinhAnh'] ?? '').toString();
     if (!raw.startsWith('GV:')) return false;
-    if (gvUsername == null || gvUsername.isEmpty) return true;
-    // Định dạng: GV:username|HoTen
     final afterPrefix = raw.substring(3);
-    final parts = afterPrefix.split('|');
-    return parts.first.toLowerCase() == gvUsername.toLowerCase();
+    final entries = afterPrefix.split(';').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    if (entries.isEmpty) return false;
+    if (gvUsername == null || gvUsername.isEmpty) return true;
+
+    for (var entry in entries) {
+      final parts = entry.split('|');
+      if (parts.first.toLowerCase() == gvUsername.toLowerCase()) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  // Lấy tên Giáo viên đang kết nối với máy của bé
+  // Lấy danh sách tên Giáo viên đang kết nối với máy của bé
   static String layTenGiaoVienKetNoi(Map<String, dynamic> be) {
     final raw = (be['hinhAnh'] ?? '').toString();
     if (!raw.startsWith('GV:')) return 'Chưa kết nối Giáo viên';
     final afterPrefix = raw.substring(3);
-    final parts = afterPrefix.split('|');
-    if (parts.length > 1 && parts[1].trim().isNotEmpty) {
-      return '${parts[1]} (@${parts[0]})';
+    final entries = afterPrefix.split(';').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    if (entries.isEmpty) return 'Chưa kết nối Giáo viên';
+
+    final names = <String>[];
+    for (var entry in entries) {
+      final parts = entry.split('|');
+      if (parts.length > 1 && parts[1].trim().isNotEmpty) {
+        names.add('${parts[1]} (@${parts[0]})');
+      } else {
+        names.add(parts[0]);
+      }
     }
-    return parts[0];
+    return names.join(', ');
   }
 
-  // Kết nối hoặc Ngắt kết nối Giáo viên với máy của bé (Lưu trực tiếp vào SQL Server qua PUT /api/TreEm/{id})
+  // Kết nối hoặc Ngắt kết nối Giáo viên với máy của bé (Hỗ trợ nhiều Giáo viên kết nối cùng 1 máy)
   static Future<bool> capNhatKetNoiGiaoVien({
     required Map<String, dynamic> be,
     required bool ketNoi,
@@ -422,7 +437,36 @@ class ApiService {
     String gvHoTen = 'Huỳnh Quốc Huy',
   }) async {
     final int id = be['id'] ?? 0;
-    final String hinhAnhMoi = ketNoi ? 'GV:$gvUsername|$gvHoTen' : 'CHUA_KET_NOI';
+    final raw = (be['hinhAnh'] ?? '').toString();
+
+    final List<Map<String, String>> gvList = [];
+    if (raw.startsWith('GV:')) {
+      final afterPrefix = raw.substring(3);
+      final entries = afterPrefix.split(';').map((e) => e.trim()).where((e) => e.isNotEmpty);
+      for (var entry in entries) {
+        final parts = entry.split('|');
+        if (parts.isNotEmpty && parts[0].isNotEmpty) {
+          gvList.add({
+            'username': parts[0],
+            'hoten': parts.length > 1 ? parts[1] : parts[0],
+          });
+        }
+      }
+    }
+
+    if (ketNoi) {
+      final exists = gvList.any((g) => g['username']!.toLowerCase() == gvUsername.toLowerCase());
+      if (!exists) {
+        gvList.add({'username': gvUsername, 'hoten': gvHoTen});
+      }
+    } else {
+      gvList.removeWhere((g) => g['username']!.toLowerCase() == gvUsername.toLowerCase());
+    }
+
+    final String hinhAnhMoi = gvList.isEmpty
+        ? 'CHUA_KET_NOI'
+        : 'GV:${gvList.map((g) => '${g['username']}|${g['hoten']}').join(';')}';
+
     return await capNhatTreEm(id, {
       'hoTen': be['hoTen'] ?? 'Bé',
       'tenThietBi': be['tenThietBi'] ?? 'Samsung Galaxy',
