@@ -93,7 +93,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// 6. Tự động tạo Role & 3 Tài khoản mẫu (Admin, NhanVien, PhuHuynh)
+// 6. Tự động tạo 3 Role & chỉ giữ duy nhất 1 Tài khoản Admin hệ thống
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -111,7 +111,7 @@ using (var scope = app.Services.CreateScope())
             }
         }
 
-        // Tạo tài khoản Admin
+        // Tạo tài khoản Admin mặc định duy nhất
         if (await userManager.FindByNameAsync("admin") == null)
         {
             var adminUser = new User
@@ -123,34 +123,6 @@ using (var scope = app.Services.CreateScope())
             };
             await userManager.CreateAsync(adminUser, "Admin@123");
             await userManager.AddToRoleAsync(adminUser, "Admin");
-        }
-
-        // Tạo tài khoản Nhân viên (Bảo mẫu/Giáo viên)
-        if (await userManager.FindByNameAsync("nhanvien") == null)
-        {
-            var staffUser = new User
-            {
-                UserName = "nhanvien",
-                Email = "nhanvien@childcare.com",
-                HoTen = "Cô Giáo Mai Lan",
-                VaiTro = "NhanVien"
-            };
-            await userManager.CreateAsync(staffUser, "NhanVien@123");
-            await userManager.AddToRoleAsync(staffUser, "NhanVien");
-        }
-
-        // Tạo tài khoản Phụ huynh
-        if (await userManager.FindByNameAsync("phuhuynh") == null)
-        {
-            var parentUser = new User
-            {
-                UserName = "phuhuynh",
-                Email = "phuhuynh@gmail.com",
-                HoTen = "Nguyễn Văn Hùng (Bố bé)",
-                VaiTro = "PhuHuynh"
-            };
-            await userManager.CreateAsync(parentUser, "PhuHuynh@123");
-            await userManager.AddToRoleAsync(parentUser, "PhuHuynh");
         }
     }
     catch (Exception ex)

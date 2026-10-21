@@ -1,4 +1,4 @@
-﻿using HuynhQuocHieu_NhomHHCC.Models;
+using HuynhQuocHieu_NhomHHCC.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +15,7 @@ namespace HuynhQuocHieu_NhomHHCC.Controllers
             _context = context;
         }
 
-        // 1. GET: /api/TreEm - Lấy danh sách toàn bộ trẻ em
+        // 1. GET: /api/TreEm - Lấy danh sách toàn bộ thiết bị trẻ em
         [HttpGet]
         public async Task<IActionResult> LayTatCa()
         {
@@ -26,12 +26,12 @@ namespace HuynhQuocHieu_NhomHHCC.Controllers
                 {
                     t.Id,
                     t.HoTen,
-                    t.NgaySinh,
-                    t.GioiTinh,
-                    t.NhomMau,
-                    t.DiUng,
+                    t.TenThietBi,
+                    t.HeDieuHanh,
+                    t.GioiHanPhut,
+                    t.DangKhoa,
                     t.SdtKhanCap,
-                    t.LopHoc,
+                    t.MaKetNoi,
                     t.HinhAnh,
                     t.PhuHuynhId,
                     TenPhuHuynh = t.PhuHuynh != null ? t.PhuHuynh.HoTen : "Chưa liên kết",
@@ -42,7 +42,7 @@ namespace HuynhQuocHieu_NhomHHCC.Controllers
             return Ok(new { status = true, data = danhSach });
         }
 
-        // 2. GET: /api/TreEm/{id} - Lấy chi tiết 1 bé
+        // 2. GET: /api/TreEm/{id} - Lấy chi tiết 1 thiết bị của bé
         [HttpGet("{id}")]
         public async Task<IActionResult> LayTheoId(int id)
         {
@@ -51,7 +51,7 @@ namespace HuynhQuocHieu_NhomHHCC.Controllers
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (be == null)
-                return NotFound(new { status = false, message = "Không tìm thấy hồ sơ của bé!" });
+                return NotFound(new { status = false, message = "Không tìm thấy hồ sơ thiết bị của bé!" });
 
             return Ok(new
             {
@@ -60,36 +60,44 @@ namespace HuynhQuocHieu_NhomHHCC.Controllers
                 {
                     be.Id,
                     be.HoTen,
-                    be.NgaySinh,
-                    be.GioiTinh,
-                    be.NhomMau,
-                    be.DiUng,
+                    be.TenThietBi,
+                    be.HeDieuHanh,
+                    be.GioiHanPhut,
+                    be.DangKhoa,
                     be.SdtKhanCap,
-                    be.LopHoc,
+                    be.MaKetNoi,
                     be.HinhAnh,
                     be.PhuHuynhId,
-                    TenPhuHuynh = be.PhuHuynh != null ? be.PhuHuynh.HoTen : "Chưa liên kết"
+                    TenPhuHuynh = be.PhuHuynh != null ? be.PhuHuynh.HoTen : "Chưa liên kết",
+                    be.NgayTao
                 }
             });
         }
 
-        // 3. POST: /api/TreEm - Thêm mới bé (DÙNG MODEL GỌN GÀNG)
+        // 3. POST: /api/TreEm - Thêm mới thiết bị bé
         [HttpPost]
         public async Task<IActionResult> ThemTreEm([FromBody] ThemTreEmModel model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            string? phuHuynhId = model.PhuHuynhId;
+            if (string.IsNullOrWhiteSpace(phuHuynhId))
+            {
+                var ph = await _context.Users.FirstOrDefaultAsync(u => u.VaiTro == "PhuHuynh");
+                if (ph != null) phuHuynhId = ph.Id;
+            }
+
             var treEm = new TreEm
             {
                 HoTen = model.HoTen,
-                NgaySinh = model.NgaySinh,
-                GioiTinh = model.GioiTinh,
-                NhomMau = model.NhomMau,
-                DiUng = model.DiUng,
-                SdtKhanCap = model.SdtKhanCap,
-                LopHoc = model.LopHoc,
+                TenThietBi = string.IsNullOrWhiteSpace(model.TenThietBi) ? "Samsung Galaxy A15" : model.TenThietBi,
+                HeDieuHanh = string.IsNullOrWhiteSpace(model.HeDieuHanh) ? "Android" : model.HeDieuHanh,
+                GioiHanPhut = model.GioiHanPhut > 0 ? model.GioiHanPhut : 120,
+                DangKhoa = model.DangKhoa,
+                SdtKhanCap = model.SdtKhanCap ?? string.Empty,
+                MaKetNoi = string.IsNullOrWhiteSpace(model.MaKetNoi) ? $"DEV-{new Random().Next(1000, 9999)}" : model.MaKetNoi,
                 HinhAnh = model.HinhAnh,
-                PhuHuynhId = model.PhuHuynhId,
+                PhuHuynhId = phuHuynhId,
                 NgayTao = DateTime.UtcNow
             };
 
@@ -99,30 +107,28 @@ namespace HuynhQuocHieu_NhomHHCC.Controllers
             return CreatedAtAction(nameof(LayTheoId), new { id = treEm.Id }, new
             {
                 status = true,
-                message = "Thêm mới hồ sơ bé thành công!",
+                message = "Thêm thiết bị của bé thành công!",
                 data = treEm
             });
         }
 
-        // 4. PUT: /api/TreEm/{id} - Sửa thông tin bé (CHỈ CẦN GỬI TRƯỜNG MUỐN SỬA)
+        // 4. PUT: /api/TreEm/{id} - Sửa thông tin thiết bị
         [HttpPut("{id}")]
         public async Task<IActionResult> CapNhatTreEm(int id, [FromBody] ThemTreEmModel model)
         {
             var beCu = await _context.TreEms.FindAsync(id);
             if (beCu == null)
-                return NotFound(new { status = false, message = "Không tìm thấy hồ sơ bé cần cập nhật!" });
+                return NotFound(new { status = false, message = "Không tìm thấy thiết bị của bé cần cập nhật!" });
 
-            // Chỉ cập nhật nếu người dùng có nhập và không phải chữ mặc định "string"
             if (!string.IsNullOrWhiteSpace(model.HoTen) && model.HoTen != "string") beCu.HoTen = model.HoTen;
-            if (model.NgaySinh != default && model.NgaySinh != DateTime.MinValue) beCu.NgaySinh = model.NgaySinh;
-            if (!string.IsNullOrWhiteSpace(model.GioiTinh) && model.GioiTinh != "string") beCu.GioiTinh = model.GioiTinh;
-            if (!string.IsNullOrWhiteSpace(model.NhomMau) && model.NhomMau != "string") beCu.NhomMau = model.NhomMau;
-            if (!string.IsNullOrWhiteSpace(model.DiUng) && model.DiUng != "string") beCu.DiUng = model.DiUng;
+            if (!string.IsNullOrWhiteSpace(model.TenThietBi) && model.TenThietBi != "string") beCu.TenThietBi = model.TenThietBi;
+            if (!string.IsNullOrWhiteSpace(model.HeDieuHanh) && model.HeDieuHanh != "string") beCu.HeDieuHanh = model.HeDieuHanh;
+            if (model.GioiHanPhut > 0) beCu.GioiHanPhut = model.GioiHanPhut;
+            beCu.DangKhoa = model.DangKhoa;
             if (!string.IsNullOrWhiteSpace(model.SdtKhanCap) && model.SdtKhanCap != "string") beCu.SdtKhanCap = model.SdtKhanCap;
-            if (!string.IsNullOrWhiteSpace(model.LopHoc) && model.LopHoc != "string") beCu.LopHoc = model.LopHoc;
+            if (!string.IsNullOrWhiteSpace(model.MaKetNoi) && model.MaKetNoi != "string") beCu.MaKetNoi = model.MaKetNoi;
             if (!string.IsNullOrWhiteSpace(model.HinhAnh) && model.HinhAnh != "string") beCu.HinhAnh = model.HinhAnh;
 
-            // Nếu có truyền ID phụ huynh thật thì mới cập nhật
             if (!string.IsNullOrWhiteSpace(model.PhuHuynhId) && model.PhuHuynhId != "string")
             {
                 beCu.PhuHuynhId = model.PhuHuynhId;
@@ -133,23 +139,47 @@ namespace HuynhQuocHieu_NhomHHCC.Controllers
             return Ok(new
             {
                 status = true,
-                message = "Cập nhật hồ sơ bé thành công!",
+                message = "Cập nhật thiết bị của bé thành công!",
                 data = beCu
             });
         }
 
-        // 5. DELETE: /api/TreEm/{id} - Xóa hồ sơ bé
+        // 5. PUT: /api/TreEm/{id}/khoa-thiet-bi - Khóa / Mở khóa thiết bị từ xa (Chức năng sáng tạo)
+        [HttpPut("{id}/khoa-thiet-bi")]
+        public async Task<IActionResult> KhoaMoThietBi(int id, [FromQuery] bool? trangThai)
+        {
+            var be = await _context.TreEms.FindAsync(id);
+            if (be == null)
+                return NotFound(new { status = false, message = "Không tìm thấy thiết bị của bé!" });
+
+            if (trangThai.HasValue)
+                be.DangKhoa = trangThai.Value;
+            else
+                be.DangKhoa = !be.DangKhoa;
+
+            await _context.SaveChangesAsync();
+
+            string thongBao = be.DangKhoa ? "Đã khóa máy của bé từ xa thành công!" : "Đã mở khóa máy của bé thành công!";
+            return Ok(new
+            {
+                status = true,
+                message = thongBao,
+                dangKhoa = be.DangKhoa
+            });
+        }
+
+        // 6. DELETE: /api/TreEm/{id} - Xóa thiết bị của bé
         [HttpDelete("{id}")]
         public async Task<IActionResult> XoaTreEm(int id)
         {
             var be = await _context.TreEms.FindAsync(id);
             if (be == null)
-                return NotFound(new { status = false, message = "Không tìm thấy hồ sơ bé cần xóa!" });
+                return NotFound(new { status = false, message = "Không tìm thấy thiết bị cần xóa!" });
 
             _context.TreEms.Remove(be);
             await _context.SaveChangesAsync();
 
-            return Ok(new { status = true, message = "Đã xóa hồ sơ bé thành công!" });
+            return Ok(new { status = true, message = "Đã xóa thiết bị thành công!" });
         }
     }
 }

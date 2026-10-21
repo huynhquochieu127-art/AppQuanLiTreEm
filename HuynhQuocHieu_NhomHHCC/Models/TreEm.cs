@@ -1,9 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HuynhQuocHieu_NhomHHCC.Models
 {
-    // Bảng lưu trong Database
+    // Bảng lưu trong Database - Quản lý thiết bị & bé
     public class TreEm
     {
         [Key]
@@ -11,21 +11,21 @@ namespace HuynhQuocHieu_NhomHHCC.Models
 
         [Required(ErrorMessage = "Họ tên bé không được để trống")]
         [MaxLength(100)]
-        public string HoTen { get; set; } = string.Empty;
+        public string HoTen { get; set; } = string.Empty; // Tên bé (Bé Tuấn, Bé An...)
 
-        public DateTime NgaySinh { get; set; }
+        public string TenThietBi { get; set; } = "Samsung Galaxy A15"; // Tên máy của bé
 
-        public string GioiTinh { get; set; } = "Nam"; // Nam / Nữ
+        public string HeDieuHanh { get; set; } = "Android"; // Android / iOS
 
-        public string NhomMau { get; set; } = "O"; // A, B, AB, O
+        public int GioiHanPhut { get; set; } = 120; // Giới hạn dùng máy mỗi ngày (phút)
 
-        public string DiUng { get; set; } = "Không có"; // Dị ứng hải sản, thuốc,...
+        public bool DangKhoa { get; set; } = false; // Khóa máy từ xa (true = Đang khóa)
 
-        public string SdtKhanCap { get; set; } = string.Empty; // SĐT bố mẹ khi khẩn cấp
+        public string SdtKhanCap { get; set; } = string.Empty; // Số SOS khẩn cấp
 
-        public string LopHoc { get; set; } = "Lớp Mầm 1"; // Lớp của bé
+        public string MaKetNoi { get; set; } = "DEV-8899"; // Mã ghép nối thiết bị / QR
 
-        public string? HinhAnh { get; set; } // Ảnh avatar của bé
+        public string? HinhAnh { get; set; } // Ảnh đại diện bé / thiết bị
 
         public string? PhuHuynhId { get; set; }
         [ForeignKey("PhuHuynhId")]
@@ -34,23 +34,23 @@ namespace HuynhQuocHieu_NhomHHCC.Models
         public DateTime NgayTao { get; set; } = DateTime.UtcNow;
     }
 
-    // Khuôn mẫu nhập trên Swagger & App (CHỈ HIỆN ĐÚNG CÁC TRƯỜNG CẦN NHẬP)
+    // Khuôn mẫu nhập trên Swagger & App Mobile
     public class ThemTreEmModel
     {
-        [Required(ErrorMessage = "Họ tên không được để trống")]
+        [Required(ErrorMessage = "Họ tên bé không được để trống")]
         public string HoTen { get; set; } = string.Empty;
 
-        public DateTime NgaySinh { get; set; } = DateTime.UtcNow;
+        public string TenThietBi { get; set; } = "Samsung Galaxy A15";
 
-        public string GioiTinh { get; set; } = "Nam";
+        public string HeDieuHanh { get; set; } = "Android";
 
-        public string NhomMau { get; set; } = "O";
+        public int GioiHanPhut { get; set; } = 120;
 
-        public string DiUng { get; set; } = "Không có";
+        public bool DangKhoa { get; set; } = false;
 
         public string SdtKhanCap { get; set; } = string.Empty;
 
-        public string LopHoc { get; set; } = "Lớp Mầm 1";
+        public string MaKetNoi { get; set; } = "DEV-8899";
 
         public string? HinhAnh { get; set; }
 

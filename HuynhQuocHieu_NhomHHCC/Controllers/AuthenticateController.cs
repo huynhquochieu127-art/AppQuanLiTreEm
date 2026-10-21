@@ -1,4 +1,4 @@
-﻿using HuynhQuocHieu_NhomHHCC.Models;
+using HuynhQuocHieu_NhomHHCC.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -76,7 +76,29 @@ namespace HuynhQuocHieu_NhomHHCC.Controllers
             if (user == null || !await _userManager.CheckPasswordAsync(user, model.MatKhau))
                 return Unauthorized(new { status = false, message = "Tên đăng nhập hoặc mật khẩu không chính xác!" });
 
-            // Sinh mã OTP 6 số ngẫu nhiên
+            // ==================== TÀI KHOẢN ADMIN: ĐƯỢC DUYỆT VÀO THẲNG, BỎ QUA OTP ====================
+            if (user.UserName.ToLower() == "admin")
+            {
+                var authClaims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id),
+                    new Claim(ClaimTypes.Name, user.UserName ?? ""),
+                    new Claim(ClaimTypes.Role, "Admin")
+                };
+
+                return Ok(new
+                {
+                    status = true,
+                    requiresOtp = false, // Không cần OTP
+                    message = "Đăng nhập Admin thành công!",
+                    token = GenerateToken(authClaims),
+                    vaiTro = "Admin",
+                    role = "Admin",
+                    username = user.UserName
+                });
+            }
+
+            // Sinh mã OTP 6 số ngẫu nhiên cho Giáo viên & Phụ huynh
             string otpCode = Random.Shared.Next(100000, 999999).ToString();
             user.MaOtp = otpCode;
             user.HanOtp = DateTime.UtcNow.AddMinutes(5); // Hạn 5 phút
@@ -93,7 +115,7 @@ namespace HuynhQuocHieu_NhomHHCC.Controllers
                 status = true,
                 requiresOtp = true,
                 message = "Đăng nhập bước 1 thành công! Mã OTP đã được gửi về hộp thư Gmail của bạn.",
-                otpDemo = otpCode, // Vẫn giữ lại để lỡ mạng chậm thì có mã test ngay
+                otpDemo = otpCode,
                 email = user.Email
             });
         }
@@ -139,6 +161,7 @@ namespace HuynhQuocHieu_NhomHHCC.Controllers
                 message = "Xác thực OTP thành công! Đăng nhập hoàn tất.",
                 token = token,
                 vaiTro = roleName,
+                role = roleName, // Trả về cả role để Flutter phân quyền chính xác 100%
                 hoTen = user.HoTen,
                 userId = user.Id
             });
@@ -206,5 +229,92 @@ namespace HuynhQuocHieu_NhomHHCC.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+        // 4. LẤY DANH SÁCH TẤT CẢ TÀI KHOẢN (Cho Admin xem)
+        [HttpGet("users")]
+        public IActionResult GetDanhSachUser()
+        {
+            var users = _userManager.Users.Select(u => new
+            {
+                u.Id,
+                u.UserName,
+                u.HoTen,
+                u.Email,
+                u.VaiTro
+            }).ToList();
+
+            return Ok(users);
+        }
+
+        // 5. XÓA TÀI KHOẢN (Cho Admin xóa user)
+        [HttpDelete("users/{username}")]
+        public async Task<IActionResult> XoaUser(string username)
+        {
+            if (username.ToLower() == "admin")
+                return BadRequest(new { status = false, message = "Không được xóa tài khoản Admin tối cao của hệ thống!" });
+
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+                return NotFound(new { status = false, message = "Không tìm thấy tài khoản người dùng!" });
+
+            // Xóa liên kết vai trò trước
+            var roles = await _userManager.GetRolesAsync(user);
+            await _userManager.RemoveFromRolesAsync(user, roles);
+
+            // Xóa người dùng
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+                return StatusCode(StatusCodes.Status500InternalServerError, new { status = false, message = "Lỗi khi xóa tài khoản!" });
+
+            return Ok(new { status = true, message = $"Đã xóa tài khoản '{username}' thành công!" });
+        }
+
+        // 6. CẬP NHẬT THÔNG TIN TÀI KHOẢN (Cho Admin sửa user - PUT)
+        [HttpPut("users/{username}")]
+        public async Task<IActionResult> CapNhatUser(string username, [FromBody] CapNhatUserModel model)
+        {
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+                return NotFound(new { status = false, message = "Không tìm thấy tài khoản người dùng!" });
+
+            if (!string.IsNullOrWhiteSpace(model.HoTen) && model.HoTen != "string")
+                user.HoTen = model.HoTen;
+
+            if (!string.IsNullOrWhiteSpace(model.Email) && model.Email != "string")
+            {
+                user.Email = model.Email;
+                user.NormalizedEmail = model.Email.ToUpperInvariant();
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.VaiTro) && model.VaiTro != "string" && user.UserName?.ToLower() != "admin")
+            {
+                var oldRoles = await _userManager.GetRolesAsync(user);
+                if (oldRoles.Any())
+                    await _userManager.RemoveFromRolesAsync(user, oldRoles);
+
+                if (!await _roleManager.RoleExistsAsync(model.VaiTro))
+                    await _roleManager.CreateAsync(new IdentityRole(model.VaiTro));
+
+                await _userManager.AddToRoleAsync(user, model.VaiTro);
+                user.VaiTro = model.VaiTro;
+            }
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                return StatusCode(StatusCodes.Status500InternalServerError, new { status = false, message = "Lỗi khi cập nhật tài khoản!" });
+
+            return Ok(new
+            {
+                status = true,
+                message = $"Đã cập nhật tài khoản '{username}' thành công!",
+                data = new { user.Id, user.UserName, user.HoTen, user.Email, user.VaiTro }
+            });
+        }
+    }
+
+    public class CapNhatUserModel
+    {
+        public string? HoTen { get; set; }
+        public string? Email { get; set; }
+        public string? VaiTro { get; set; }
     }
 }

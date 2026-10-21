@@ -30,17 +30,12 @@ namespace HuynhQuocHieu_NhomHHCC.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("BuaAn")
+                    b.Property<string>("CanhBao")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("GhiChuSucKhoe")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("GiacNgu")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("MucPin")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("NgayGhi")
                         .HasColumnType("datetime2");
@@ -48,11 +43,19 @@ namespace HuynhQuocHieu_NhomHHCC.Migrations
                     b.Property<string>("NhanVienGhi")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("ThanNhiet")
-                        .HasColumnType("float");
+                    b.Property<int>("ThoiGianDungPhut")
+                        .HasColumnType("int");
 
                     b.Property<int>("TreEmId")
                         .HasColumnType("int");
+
+                    b.Property<string>("UngDung")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ViTriHienTai")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -69,11 +72,13 @@ namespace HuynhQuocHieu_NhomHHCC.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("DiUng")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("DangKhoa")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("GioiTinh")
+                    b.Property<int>("GioiHanPhut")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HeDieuHanh")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -85,24 +90,21 @@ namespace HuynhQuocHieu_NhomHHCC.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("LopHoc")
+                    b.Property<string>("MaKetNoi")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("NgaySinh")
-                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("NgayTao")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("NhomMau")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PhuHuynhId")
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("SdtKhanCap")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TenThietBi")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
