@@ -1,6 +1,6 @@
 class ApiConfig {
   // Link Conveyor Internet toàn cầu của bạn (Bật 4G hay Wifi ở đâu cũng chạy được)
-  static const String baseUrl = "https://nextsagebook29.conveyor.cloud";
+  static const String baseUrl = "https://firstsagewave59.conveyor.cloud";
 
   // API Xác thực & Tài khoản
   static const String loginUrl = "$baseUrl/api/Authenticate/login";
