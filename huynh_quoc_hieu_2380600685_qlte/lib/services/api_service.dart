@@ -37,7 +37,10 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse(ApiConfig.loginUrl),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
         body: jsonEncode({
           'tenDangNhap': username, // Khớp đúng với C# Backend
           'matKhau': matKhau,
@@ -71,7 +74,10 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse(ApiConfig.verifyOtpUrl),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
         body: jsonEncode({
           'tenDangNhap': username, // Khớp đúng với C# Backend
           'maOtp': otpCode,        // Khớp đúng với C# Backend
@@ -109,7 +115,10 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse(ApiConfig.registerUrl),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
         body: jsonEncode({
           'hoTen': hoTen,
           'tenDangNhap': username,
@@ -142,6 +151,7 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
+          'ngrok-skip-browser-warning': 'true',
         },
       );
 
