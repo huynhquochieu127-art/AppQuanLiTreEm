@@ -1,6 +1,6 @@
 class ApiConfig {
   // Link Conveyor Internet toàn cầu của bạn (Bật 4G hay Wifi ở đâu cũng chạy được)
-  static const String baseUrl = "https://false-cinch-bagpipe.ngrok-free.dev";
+  static const String baseUrl = "https://representation-partners-receives-abilities.trycloudflare.com";
 
   // API Xác thực & Tài khoản
   static const String loginUrl = "$baseUrl/api/Authenticate/login";
